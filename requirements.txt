@@ -1,7 +1,17 @@
-flask==2.3.3
-python-dotenv==1.0.0
-livekit-agents[all]==0.8.0
-livekit-plugins-openai==0.7.0
-livekit-plugins-elevenlabs==0.6.0
-livekit-plugins-silero==0.6.0
-gunicorn==21.2.0
+# requirements.txt
+
+# Para o servidor de API (api_server.py)
+fastapi
+uvicorn[standard]  # O [standard] inclui algumas otimizações para produção
+
+# Para o gerador de token (usado pela API) e o agente
+livekit-api~=1.0
+
+# Para o agente de IA (agent_server.py)
+livekit-agents~=1.0
+livekit-plugins-openai~=1.0
+livekit-plugins-elevenlabs~=1.0
+livekit-plugins-silero~=1.0
+
+# Para carregar variáveis de ambiente do arquivo .env
+python-dotenv
