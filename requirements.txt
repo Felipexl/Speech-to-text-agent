@@ -1,17 +1,18 @@
 # requirements.txt
 
-# Para o servidor de API (api_server.py)
+# Para o servidor de API e gerenciador de processos
 fastapi
-uvicorn[standard]  # O [standard] inclui algumas otimizações para produção
+uvicorn[standard]
+honcho  # <-- NOSSA FERRAMENTA MÁGICA
 
-# Para o gerador de token (usado pela API) e o agente
+# Para o gerador de token e o agente
 livekit-api~=1.0
 
-# Para o agente de IA (agent_server.py)
+# Para o agente de IA
 livekit-agents~=1.0
 livekit-plugins-openai~=1.0
 livekit-plugins-elevenlabs~=1.0
 livekit-plugins-silero~=1.0
 
-# Para carregar variáveis de ambiente do arquivo .env
+# Para carregar variáveis de ambiente
 python-dotenv
