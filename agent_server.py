@@ -108,10 +108,16 @@ async def entrypoint(ctx: JobContext):
         )
         
         # Configura ElevenLabs TTS com API Key explícita
-        tts = elevenlabs.TTS(
-            api_key=elevenlabs_key
-        )
+        # tts = elevenlabs.TTS(
+        #     api_key=elevenlabs_key
+        # )
         
+    # Usando o TTS da OpenAI como prova de conceito
+        logger.info("Usando o TTS da OpenAI temporariamente para depuração.")
+        tts = openai.TTS(
+            api_key=openai_key
+)
+
         vad = silero.VAD.load()
         
         # Cria a sessão do agente com os componentes
