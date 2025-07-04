@@ -54,47 +54,101 @@ DIRETRIZES:
         )
 
 
+def validate_api_keys():
+    """Valida se as chaves de API estão configuradas"""
+    required_keys = {
+        'OPENAI_API_KEY': 'OpenAI API Key',
+        'ELEVENLABS_API_KEY': 'ElevenLabs API Key',
+        'LIVEKIT_URL': 'LiveKit URL',
+        'LIVEKIT_API_KEY': 'LiveKit API Key',
+        'LIVEKIT_API_SECRET': 'LiveKit API Secret'
+    }
+    
+    missing_keys = []
+    for key, description in required_keys.items():
+        if not os.getenv(key):
+            missing_keys.append(f"{key} ({description})")
+    
+    if missing_keys:
+        logger.error("Chaves de API ausentes:")
+        for key in missing_keys:
+            logger.error(f"  - {key}")
+        raise ValueError("Configure as variáveis de ambiente necessárias no arquivo .env")
+    
+    logger.info("Todas as chaves de API estão configuradas ✓")
+
+
 async def entrypoint(ctx: JobContext):
     """Função principal que inicia o agente"""
     logger.info(f"Iniciando sessão para sala: {ctx.room.name}")
     
-    # Conecta à sala
-    await ctx.connect()
-    
-    # Configurações dos serviços
-    stt = openai.STT()
-    llm = openai.LLM(model="gpt-4o")
-    tts = elevenlabs.TTS()
-    vad = silero.VAD.load()
-    
-    # Cria a sessão do agente com os componentes
-    session = AgentSession(
-        stt=stt,
-        llm=llm,
-        tts=tts,
-        vad=vad,
-    )
-    
-    # Cria o assistente Sol
-    assistant = SolAssistant()
-    
-    # Inicia a sessão
-    await session.start(
-        room=ctx.room,
-        agent=assistant
-    )
-    
-    # Gera saudação inicial
-    await session.generate_reply(
-        instructions="Cumprimente o usuário como a Sol da Sólides e ofereça ajuda."
-    )
-    
-    logger.info("Agente Sol iniciado com sucesso!")
+    try:
+        # Valida as chaves de API antes de iniciar
+        validate_api_keys()
+        
+        # Conecta à sala
+        await ctx.connect()
+        
+        # Configurações dos serviços com autenticação explícita
+        openai_key = os.getenv('OPENAI_API_KEY')
+        elevenlabs_key = os.getenv('ELEVENLABS_API_KEY')
+        
+        if not openai_key:
+            raise ValueError("OPENAI_API_KEY não encontrada")
+        if not elevenlabs_key:
+            raise ValueError("ELEVENLABS_API_KEY não encontrada")
+        
+        stt = openai.STT(
+            api_key=openai_key
+        )
+        
+        llm = openai.LLM(
+            model="gpt-4o",
+            api_key=openai_key
+        )
+        
+        # Configura ElevenLabs TTS com API Key explícita
+        tts = elevenlabs.TTS(
+            api_key=elevenlabs_key
+        )
+        
+        vad = silero.VAD.load()
+        
+        # Cria a sessão do agente com os componentes
+        session = AgentSession(
+            stt=stt,
+            llm=llm,
+            tts=tts,
+            vad=vad,
+        )
+        
+        # Cria o assistente Sol
+        assistant = SolAssistant()
+        
+        # Inicia a sessão
+        await session.start(
+            room=ctx.room,
+            agent=assistant
+        )
+        
+        # Gera saudação inicial
+        await session.generate_reply(
+            instructions="Cumprimente o usuário como a Sol da Sólides e ofereça ajuda."
+        )
+        
+        logger.info("Agente Sol iniciado com sucesso!")
+        
+    except Exception as e:
+        logger.error(f"Erro ao iniciar o agente: {e}")
+        raise
 
 
 def main():
     """Função principal - nova API do LiveKit Agents"""
     try:
+        # Valida configuração antes de iniciar
+        validate_api_keys()
+        
         # Nova forma de executar o agente usando agents.cli.run_app
         agents.cli.run_app(
             WorkerOptions(
@@ -103,10 +157,14 @@ def main():
         )
     except KeyboardInterrupt:
         logger.info("Servidor interrompido pelo usuário")
+    except ValueError as e:
+        logger.error(f"Erro de configuração: {e}")
+        sys.exit(1)
     except Exception as e:
         logger.error(f"Erro inesperado: {e}")
         logger.error("Tente executar via CLI:")
         logger.error("python main.py dev")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
